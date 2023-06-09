@@ -1,0 +1,70 @@
+Valuation<-as.data.frame(Valuation)
+
+#Checking for duplicates
+sum(duplicated(Valuation,))
+
+#Checking for missing values
+sum(is.na(Valuation))
+map(Valuation, ~sum(is.na(.)))
+
+#Imputing missing values
+Valuation<-impute(Valuation,method = "median/mode")
+str(Valuation)
+
+#Changing variable type
+Valuation<-Valuation[-1]
+Valuation$TypeofStore<-as.factor(Valuation$TypeofStore)
+Valuation$TypeofLocation<-as.factor((Valuation$TypeofLocation))
+Valuation$Citytype<-as.factor(Valuation$Citytype)
+
+Valuation$Investment<-as.numeric(Valuation$Investment)
+Valuation$EstimatedPopulationinvicinity<-as.numeric(Valuation$EstimatedPopulationinvicinity)
+Valuation$ValuationofBusiness<-as.numeric(Valuation$ValuationofBusiness)
+str(Valuation)
+
+#Checking skewness/kurtosis
+x<-Valuation[c(4,5,6,7,8)]
+sapply(x, skewness)
+sapply(x, kurtosis)
+
+#Bringing Skewness/Kurtosis of all variables under control
+sqrtvalue<-sqrt(Valuation$ValuationofBusiness)
+skewness(sqrtvalue)
+kurtosis(sqrtvalue)
+
+sqrtpop<-sqrt(Valuation$EstimatedPopulationinvicinity)
+kurtosis(sqrtpop)
+skewness(sqrtpop)
+
+#Q2. A
+LeveneTest(sqrtvalue,Valuation$Citytype)
+t.test(sqrtvalue ~ Valuation$Citytype,var.equal = T,alternative="greater")
+
+#Q2. B
+LeveneTest(Valuation$Investment,Valuation$TypeofLocation)
+t.test(Valuation$Investment ~ Valuation$TypeofLocation,var.equal = T)
+
+#Q2. C
+rcorr(as.matrix(x))
+
+#Q2. D
+as.data.frame(chisq_test(Valuation$Citytype,Valuation$TypeofStore))
+
+#Q3.
+attach(Valuation)
+y<-lm(sqrtvalue~TypeofStore+TypeofLocation+Citytype+Investment+Numberofcompetitorstores+sqrtpop+AverageHouseholdIncome)
+summary(y)
+lm.beta(y)
+
+sqrt(5000)
+predict(y,newdata = data.frame(TypeofStore="Large",TypeofLocation="Commercial",Citytype="Metro",Investment=50000,Numberofcompetitorstores=5,sqrtpop=70.71068,AverageHouseholdIncome=20000))
+302.2531^2 # since the dependent variable is in sqrt form  
+
+#Q4.
+levels(TypeofLocation)
+TypeofLocation<-relevel(TypeofLocation,ref = "Residential")
+
+z<-glm(TypeofLocation~TypeofStore+Investment+Numberofcompetitorstores+sqrtpop,data = Valuation,family = "binomial")
+summary(z)
+
+predict(z,newdata = data.frame(TypeofStore="Large",Investment=50000,Numberofcompetitorstores=5,sqrtpop=70.71068),type = "response")
